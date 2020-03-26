@@ -1,0 +1,90 @@
+from numpy import *
+
+def loadDataSet():
+    #训练数据集
+    watermelonList = [ ['青绿', '蜷缩', '浊响', '清晰', '凹陷', '硬滑'],\
+                    ['乌黑', '蜷缩', '沉闷', '清晰', '凹陷', '硬滑'],\
+                    ['乌黑', '蜷缩', '浊响', '清晰', '凹陷', '硬滑'],\
+                    ['青绿', '稍蜷', '浊响', '清晰', '稍凹', '软粘'],\
+                    ['乌黑', '稍蜷', '浊响', '稍糊', '稍凹', '软粘'],\
+                    ['乌黑', '稍蜷', '浊响', '清晰', '稍凹', '硬滑'],\
+                    ['青绿', '硬挺', '清脆', '清晰', '平坦', '软粘'],\
+                    ['浅白', '蜷缩', '浊响', '模糊', '平坦', '软粘'],\
+                    ['青绿', '稍蜷', '浊响', '稍糊', '凹陷', '硬滑'],\
+                    ['浅白', '稍蜷', '沉闷', '稍糊', '凹陷', '硬滑'],\
+                    ['乌黑', '稍蜷', '浊响', '清晰', '稍凹', '软粘'],\
+                    ['浅白', '蜷缩', '浊响', '模糊', '平坦', '硬滑'],\
+                    ['青绿', '蜷缩', '沉闷', '稍糊', '稍凹', '硬滑']]
+    attrlabels = ['色泽', '根蒂', '敲击', '纹理', '脐部', '触感']
+    classVec = [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+    return watermelonList, classVec
+
+def createAttrList(dataSet):
+    attrSet = set([])
+    for sample in dataSet:
+        attrSet = attrSet | set(sample)
+    return list(attrSet)
+
+def setOfAttr2Vec(attrList, inputSet):
+    returnVec = [0] * len(attrList)
+    for word in inputSet:
+        if word in attrList:
+            returnVec[attrList.index(word)] = 1
+    return returnVec
+
+def trainNB0(trainMatrix, trainCategory):
+    numTrainSam = len(trainMatrix)
+    numAttr = len(trainMatrix[0])
+    pGood = (sum(trainCategory)+1)/ float(numTrainSam+2)  #先验概率
+    pBad = (numTrainSam-sum(trainCategory)+1)/float(numTrainSam+2)
+    p0Num = ones(numAttr)
+    p1Num = ones(numAttr)
+    for i in range(numTrainSam):
+        if trainCategory[i] == 1:
+            p1Num += trainMatrix[i]
+        else:
+            p0Num += trainMatrix[i]
+    p1Vect = log(p1Num / (sum(trainCategory)+2))               #1类别条件概率
+    p0Vect = log(p0Num / (numTrainSam-sum(trainCategory)+2))   #0类别条件概率
+    return p0Vect, p1Vect, pGood,pBad
+
+def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1,pClass0):
+    p1 = sum(vec2Classify * p1Vec) + log(pClass1)   #1类后验概率
+    p0 = sum(vec2Classify * p0Vec) + log(pClass0)   #0类后验概率
+    if p1 > p0:
+        return 1
+    else:
+        return 0
+
+def testDataSet():
+    #测试数据集
+    testList=[['青绿', '蜷缩', '沉闷', '清晰', '凹陷', '硬滑'],\
+              ['浅白', '蜷缩', '浊响', '清晰', '凹陷', '硬滑'],\
+              ['乌黑', '稍蜷', '沉闷', '稍糊', '稍凹', '硬滑'],\
+              ['浅白', '硬挺', '清脆', '模糊', '平坦', '硬滑']]
+    classLabel=[1, 1, 0, 0]
+    return testList,classLabel
+
+def testingNB():
+    watermelonList, classVec = loadDataSet()
+    myAttrList = createAttrList(watermelonList)
+    trainMat = []
+    testLabel=[]
+    for waterSam in watermelonList:
+        trainMat.append(setOfAttr2Vec(myAttrList, waterSam))
+    p0V, p1V, pGo,pBa = trainNB0(array(trainMat), array(classVec))
+    testList,classLabel = testDataSet()
+    for i in range(len(testList)):
+        thisWel=array(setOfAttr2Vec(myAttrList,testList[i]))
+        flag=classifyNB(thisWel,p0V,p1V,pGo,pBa)
+        testLabel.append(flag)
+        if flag==1:
+            print("、".join(testList[i])+"是好瓜")
+        else:
+            print("、".join(testList[i])+"是坏瓜")
+    errorEst = multiply(sign(mat(testLabel).T)!= mat(classLabel).T,ones((len(classLabel),1)))
+    errorRate =errorEst.sum()/len(classLabel)
+    print("基于测试集的贝叶斯分类器的错误率为:",errorRate)
+
+if __name__=="__main__":
+    testingNB()
